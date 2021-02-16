@@ -1,0 +1,42 @@
+service: api-infrastructure-${self:custom.projectName}
+frameworkVersion: ">=1.60.0"
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  region: eu-west-1
+  stage: dev
+  iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - dynamodb:DescribeTable
+      - dynamodb:Query
+      - dynamodb:Scan
+      - dynamodb:GetItem
+      - dynamodb:PutItem
+      - dynamodb:UpdateItem
+      - dynamodb:DeleteItem
+    Resource:
+      - '*'
+    
+custom:
+  # Our stage is based on what is passed in when running serverless
+  # commands. Or falls back to what we have set in the provider section.
+  stage: ${opt.stage, self:provider.stage}
+  projectName: ${file(../../serverless.common.yml):custom.projectName}
+
+plugins:
+  - serverless-offline
+  - serverless-webpack
+
+resources:
+  - ${file(resources/api-gateway.yml)}
+
+functions:
+  s3Put:
+    handler: src/handler.s3Put
+    events:
+      - http:
+          path: /s3/put
+          method: get
+          cors: true
